@@ -13,12 +13,16 @@
     .sub { color: #64748b; margin-top: 8px; font-size: 14px; }
     .box, .card { background: white; border: 1px solid #e5e7eb; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.06); }
     .box { padding: 16px; margin-bottom: 18px; }
-    .controls { display: grid; grid-template-columns: 1fr 180px 160px; gap: 12px; align-items: end; }
+    .controls { display: grid; grid-template-columns: 1fr 160px 160px 160px; gap: 12px; align-items: end; }
     label { font-size: 14px; font-weight: 800; display: block; margin-bottom: 8px; }
     input, select { width: 100%; padding: 13px 14px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 15px; outline: none; background: white; }
     input:focus, select:focus { border-color: #2563eb; }
     button { border: 0; border-radius: 14px; padding: 13px 16px; background: #111827; color: white; font-weight: 800; cursor: pointer; white-space: nowrap; }
     button:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-blue { background: #2563eb; }
+    .btn-green { background: #16a34a; }
+    .btn-red { background: #dc2626; }
+    .btn-gray { background: #475569; }
     .meta { margin-top: 10px; color: #64748b; font-size: 12px; }
     .error { margin-top: 10px; background: #fffbeb; color: #92400e; border-radius: 12px; padding: 10px; font-size: 13px; display: none; }
     .section-title { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 12px; }
@@ -32,6 +36,7 @@
     .up { background: #dcfce7; color: #166534; }
     .down { background: #fee2e2; color: #991b1b; }
     .neutral { background: #e0f2fe; color: #075985; }
+    .warn { background: #fef3c7; color: #92400e; }
     .mini { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
     .cell { background: #f1f5f9; border-radius: 13px; padding: 11px; font-size: 13px; }
     .cell.wide { grid-column: span 2; }
@@ -46,13 +51,18 @@
     .pull { background: #eff6ff; }
     .tp1 { background: #f7fee7; }
     .tp2 { background: #dcfce7; }
-    .stop { background: #fee2e2; grid-column: span 2; }
+    .stop { background: #fee2e2; }
+    .wide { grid-column: span 2; }
     .watch { background: #f8fafc; border: 1px dashed #cbd5e1; }
     .coin-btn { width: 100%; margin-top: 12px; background: #2563eb; }
     .selected { outline: 3px solid #2563eb; }
+    .trade-panel { border: 2px solid #111827; }
+    .trade-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+    .big-pnl { font-size: 34px; font-weight: 900; }
     .foot { color: #64748b; font-size: 12px; line-height: 1.5; margin-top: 18px; }
-    @media (max-width: 950px) { .grid { grid-template-columns: 1fr 1fr; } .controls { grid-template-columns: 1fr; } }
-    @media (max-width: 640px) { .wrap { padding: 14px; } .top { flex-direction: column; align-items: stretch; } .grid { grid-template-columns: 1fr; } h1 { font-size: 26px; } }
+    @media (max-width: 1100px) { .controls { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 950px) { .grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .wrap { padding: 14px; } .top { flex-direction: column; align-items: stretch; } .grid { grid-template-columns: 1fr; } .controls, .trade-actions { grid-template-columns: 1fr; } h1 { font-size: 26px; } }
   </style>
 </head>
 <body>
@@ -60,7 +70,7 @@
     <div class="top">
       <div>
         <h1>Binance TRY Trade Radar</h1>
-        <div class="sub">TRY paritelerini tarar, ana sayfaya en uygun adayları dizer, seçtiğin coin için giriş / hedef / stop hesaplar.</div>
+        <div class="sub">Coin seç, “Girdim” butonuna basınca giriş fiyatı sabitlenir. Sonra sistem kâr/zarar, hedef ve stop takibi yapar.</div>
       </div>
       <button id="refreshBtn">Yenile</button>
     </div>
@@ -70,6 +80,10 @@
         <div>
           <label for="manualSymbol">Benim seçtiğim coin</label>
           <input id="manualSymbol" placeholder="Örn: SLPTRY, TRUTRY, LUNCTRY" />
+        </div>
+        <div>
+          <label for="amountTl">Tutar TL</label>
+          <input id="amountTl" type="number" value="1000" min="1" />
         </div>
         <div>
           <label for="riskMode">Risk modu</label>
@@ -84,6 +98,12 @@
       <div class="meta" id="updated">Son güncelleme: - · Otomatik yenileme: 30 sn</div>
       <div class="error" id="error"></div>
     </div>
+
+    <div class="section-title">
+      <h2>Aktif İşlem Takibi</h2>
+      <span class="badge warn">Giriş fiyatı sabitlenir</span>
+    </div>
+    <div id="activeTrade"></div>
 
     <div class="section-title">
       <h2>Benim Öneri Adaylarım</h2>
@@ -104,7 +124,7 @@
     <div class="grid" id="watchlist"></div>
 
     <div class="foot">
-      Bu araç yatırım tavsiyesi değildir; otomatik al/sat yapmaz. Sinyaller 24 saatlik değişim, hacim, gün içi bant konumu ve basit risk kurallarıyla hesaplanır. Ani haber, spread, likidite ve dump riskini garanti edemez. Stop kullanmadan işlem yapmak yüksek risklidir.
+      Bu araç yatırım tavsiyesi değildir; otomatik al/sat yapmaz. “Girdim” dediğin an giriş fiyatını kilitler ve sadece takip eder. Sinyaller 24 saatlik değişim, hacim, gün içi bant konumu ve basit risk kurallarıyla hesaplanır. Stop kullanmadan işlem yapmak yüksek risklidir.
     </div>
   </div>
 
@@ -113,6 +133,7 @@
     const refreshBtn = document.getElementById("refreshBtn");
     const analyzeBtn = document.getElementById("analyzeBtn");
     const manualSymbol = document.getElementById("manualSymbol");
+    const amountTl = document.getElementById("amountTl");
     const riskMode = document.getElementById("riskMode");
     const updated = document.getElementById("updated");
     const errorBox = document.getElementById("error");
@@ -120,40 +141,36 @@
     const watchlist = document.getElementById("watchlist");
     const selectedCoin = document.getElementById("selectedCoin");
     const selectedName = document.getElementById("selectedName");
+    const activeTradeDiv = document.getElementById("activeTrade");
 
     let allTryRows = [];
+    let currentSelected = null;
+    let activeTrade = JSON.parse(localStorage.getItem("activeTradeV1") || "null");
 
     function formatNumber(value, digits = 6) {
       const num = Number(value);
       if (!Number.isFinite(num)) return "-";
       return num.toLocaleString("tr-TR", { maximumFractionDigits: digits });
     }
-
     function formatPct(value) {
       const num = Number(value);
       if (!Number.isFinite(num)) return "-";
       return (num > 0 ? "+" : "") + num.toFixed(2) + "%";
     }
-
     function showError(msg) {
       if (!msg) { errorBox.style.display = "none"; errorBox.textContent = ""; return; }
       errorBox.textContent = msg;
       errorBox.style.display = "block";
     }
-
     function paramsByRisk() {
       const mode = riskMode.value;
       if (mode === "crazy") return { stop: .94, tp1: 1.10, tp2: 1.20, minChange: 8, minPos: .68 };
       if (mode === "aggressive") return { stop: .93, tp1: 1.08, tp2: 1.15, minChange: 6, minPos: .65 };
       return { stop: .95, tp1: 1.05, tp2: 1.10, minChange: 4, minPos: .60 };
     }
-
     function scoreCoin(t) {
-      const last = Number(t.lastPrice);
-      const high = Number(t.highPrice);
-      const low = Number(t.lowPrice);
-      const change = Number(t.priceChangePercent);
-      const volumeTry = Number(t.quoteVolume);
+      const last = Number(t.lastPrice), high = Number(t.highPrice), low = Number(t.lowPrice);
+      const change = Number(t.priceChangePercent), volumeTry = Number(t.quoteVolume);
       const range = high - low;
       const pos = range > 0 ? (last - low) / range : .5;
       const volumeScore = Math.min(Math.log10(Math.max(volumeTry, 1)) * 8, 70);
@@ -162,140 +179,185 @@
       const overheatPenalty = change > 18 && pos > .88 ? 22 : 0;
       return Math.round(volumeScore + changeScore + posScore - overheatPenalty);
     }
-
     function getSignal(t) {
       const p = paramsByRisk();
-      const last = Number(t.lastPrice);
-      const high = Number(t.highPrice);
-      const low = Number(t.lowPrice);
-      const change = Number(t.priceChangePercent);
-      const volumeTry = Number(t.quoteVolume);
+      const last = Number(t.lastPrice), high = Number(t.highPrice), low = Number(t.lowPrice);
+      const change = Number(t.priceChangePercent), volumeTry = Number(t.quoteVolume);
       const range = high - low;
       const pos = range > 0 ? (last - low) / range : .5;
       const score = scoreCoin(t);
-
       let action = "BEKLE";
       let reason = "Net kırılım yok. Acele giriş yerine izlemek daha mantıklı.";
-
-      if (change < -5) {
-        action = "UZAK DUR";
-        reason = "Günlük momentum zayıf; düşen bıçağı tutma riski var.";
-      } else if (change > 18 && pos > .88) {
-        action = "RİSKLİ - KOVALAMA";
-        reason = "Çok yukarıda. Geri çekilme gelmeden girmek dump riskini büyütür.";
-      } else if (change >= p.minChange && pos >= p.minPos && volumeTry > 5000000) {
-        action = "GİRİŞ ADAYI";
-        reason = "Momentum, hacim ve bant konumu uygun. Kırılım sonrası küçük pozisyon denenebilir.";
-      } else if (change >= 3 && volumeTry > 3000000) {
-        action = "İZLE";
-        reason = "Hareket var ama giriş için teyit eksik. Yeşil mum + hacim bekle.";
-      }
-
-      return {
-        action, reason, score,
-        entry: last,
-        pullbackEntry: high * .965,
-        take1: last * p.tp1,
-        take2: last * p.tp2,
-        stop: last * p.stop
-      };
+      if (change < -5) { action = "UZAK DUR"; reason = "Günlük momentum zayıf; düşen bıçağı tutma riski var."; }
+      else if (change > 18 && pos > .88) { action = "RİSKLİ - KOVALAMA"; reason = "Çok yukarıda. Geri çekilme gelmeden girmek dump riskini büyütür."; }
+      else if (change >= p.minChange && pos >= p.minPos && volumeTry > 5000000) { action = "GİRİŞ ADAYI"; reason = "Momentum, hacim ve bant konumu uygun. Kırılım sonrası küçük pozisyon denenebilir."; }
+      else if (change >= 3 && volumeTry > 3000000) { action = "İZLE"; reason = "Hareket var ama giriş için teyit eksik. Yeşil mum + hacim bekle."; }
+      const buyLimit = (change > 8 || pos > .75) ? Math.min(last * .985, high * .965) : last;
+      return { action, reason, score, entry: last, buyLimit, pullbackEntry: high * .965, take1: buyLimit * p.tp1, take2: buyLimit * p.tp2, stop: buyLimit * p.stop };
     }
-
     function cardHtml(t, selected=false) {
       const s = getSignal(t);
       const change = Number(t.priceChangePercent);
       const badgeClass = change >= 0 ? "badge up" : "badge down";
       return `
         <div class="card ${selected ? "selected" : ""}">
-          <div class="head">
-            <div>
-              <div class="symbol">${t.symbol}</div>
-              <div class="price">${formatNumber(t.lastPrice, 8)} ₺</div>
-            </div>
-            <div class="${badgeClass}">${formatPct(t.priceChangePercent)}</div>
-          </div>
+          <div class="head"><div><div class="symbol">${t.symbol}</div><div class="price">${formatNumber(t.lastPrice, 8)} ₺</div></div><div class="${badgeClass}">${formatPct(t.priceChangePercent)}</div></div>
           <div class="mini">
             <div class="cell"><span>24s Düşük</span><strong>${formatNumber(t.lowPrice, 8)}</strong></div>
             <div class="cell"><span>24s Yüksek</span><strong>${formatNumber(t.highPrice, 8)}</strong></div>
             <div class="cell"><span>Skor</span><strong>${s.score}</strong></div>
             <div class="cell"><span>Hacim TRY</span><strong>${formatNumber(t.quoteVolume, 0)} ₺</strong></div>
           </div>
-          <div class="signal">
-            <div class="signal-title">${s.action}</div>
-            <p>${s.reason}</p>
-          </div>
+          <div class="signal"><div class="signal-title">${s.action}</div><p>${s.reason}</p></div>
           <div class="levels">
-            <div class="level entry"><span>Giriş</span><strong>${formatNumber(s.entry, 8)}</strong></div>
-            <div class="level pull"><span>Geri çekilme girişi</span><strong>${formatNumber(s.pullbackEntry, 8)}</strong></div>
-            <div class="level tp1"><span>Kâr 1</span><strong>${formatNumber(s.take1, 8)}</strong></div>
-            <div class="level tp2"><span>Kâr 2</span><strong>${formatNumber(s.take2, 8)}</strong></div>
-            <div class="level stop"><span>Stop</span><strong>${formatNumber(s.stop, 8)}</strong></div>
+            <div class="level entry"><span>Limit alış emri yaz</span><strong>${formatNumber(s.buyLimit, 8)}</strong></div>
+            <div class="level pull"><span>Anlık fiyat</span><strong>${formatNumber(s.entry, 8)}</strong></div>
+            <div class="level tp1"><span>Örnek Kâr 1</span><strong>${formatNumber(s.take1, 8)}</strong></div>
+            <div class="level tp2"><span>Örnek Kâr 2</span><strong>${formatNumber(s.take2, 8)}</strong></div>
+            <div class="level stop wide"><span>Örnek Stop</span><strong>${formatNumber(s.stop, 8)}</strong></div>
           </div>
-          <button class="coin-btn" onclick="selectCoin('${t.symbol}')">Bunu Seç / Analiz Et</button>
-        </div>
-      `;
+          <div class="trade-actions">
+            <button class="btn-blue" onclick="selectCoin('${t.symbol}')">Analiz Et</button>
+            <button class="btn-green" onclick="enterTrade('${t.symbol}', ${s.buyLimit})">Limitten Girdim</button>
+            <button class="btn-gray" onclick="manualSymbol.value='${t.symbol}'; analyzeManual();">Seç</button>
+          </div>
+        </div>`;
     }
-
     async function loadAllTryPairs() {
-      refreshBtn.disabled = true;
-      showError("");
+      refreshBtn.disabled = true; showError("");
       try {
         const res = await fetch(`${API_BASE}/ticker/24hr`);
         if (!res.ok) throw new Error("Binance verisi alınamadı");
         const data = await res.json();
-        allTryRows = data
-          .filter(x => x.symbol.endsWith("TRY") && Number(x.quoteVolume) > 1000000)
-          .sort((a, b) => scoreCoin(b) - scoreCoin(a));
-
+        allTryRows = data.filter(x => x.symbol.endsWith("TRY") && Number(x.quoteVolume) > 1000000).sort((a,b)=>scoreCoin(b)-scoreCoin(a));
         const rec = allTryRows.filter(x => ["GİRİŞ ADAYI", "İZLE"].includes(getSignal(x).action)).slice(0, 6);
         const top = allTryRows.slice(0, 12);
-
         recommended.innerHTML = rec.length ? rec.map(x => cardHtml(x)).join("") : `<div class="card watch">Şu an güçlü öneri adayı yok. Beklemek daha güvenli.</div>`;
         watchlist.innerHTML = top.map(x => cardHtml(x)).join("");
         updated.textContent = "Son güncelleme: " + new Date().toLocaleTimeString("tr-TR") + " · Otomatik yenileme: 30 sn";
-      } catch (e) {
-        showError(e.message || "Veri çekilemedi. Tarayıcı CORS hatası verirse küçük bir proxy/backend gerekir.");
-      } finally {
-        refreshBtn.disabled = false;
-      }
+        renderActiveTrade();
+      } catch (e) { showError(e.message || "Veri çekilemedi. Tarayıcı CORS hatası verirse küçük bir proxy/backend gerekir."); }
+      finally { refreshBtn.disabled = false; }
     }
-
     async function fetchSymbol(symbol) {
       const clean = symbol.trim().toUpperCase();
       const res = await fetch(`${API_BASE}/ticker/24hr?symbol=${clean}`);
       if (!res.ok) throw new Error(clean + " bulunamadı");
       return await res.json();
     }
-
     async function analyzeManual() {
       const symbol = manualSymbol.value.trim().toUpperCase();
       if (!symbol) return showError("Analiz için bir parite yaz: örn SLPTRY");
       showError("");
       try {
         const data = await fetchSymbol(symbol);
+        currentSelected = data;
         selectedName.textContent = symbol;
         selectedCoin.innerHTML = cardHtml(data, true);
-      } catch (e) {
-        showError(e.message || "Coin analiz edilemedi");
-      }
+      } catch (e) { showError(e.message || "Coin analiz edilemedi"); }
     }
-
     window.selectCoin = async function(symbol) {
       manualSymbol.value = symbol;
       await analyzeManual();
       document.getElementById("selectedCoin").scrollIntoView({ behavior: "smooth", block: "start" });
     };
-
+    window.enterTrade = async function(symbol, fixedEntryPrice) {
+      showError("");
+      try {
+        const data = await fetchSymbol(symbol);
+        const p = paramsByRisk();
+        const currentPrice = Number(data.lastPrice);
+        const entryPrice = Number(fixedEntryPrice || currentPrice);
+        const amount = Number(amountTl.value || 0);
+        activeTrade = {
+          symbol,
+          amount,
+          entryPrice,
+          currentPriceAtLock: currentPrice,
+          qty: amount / entryPrice,
+          stopPrice: entryPrice * p.stop,
+          take1: entryPrice * p.tp1,
+          take2: entryPrice * p.tp2,
+          enteredAt: new Date().toISOString(),
+          riskMode: riskMode.value
+        };
+        localStorage.setItem("activeTradeV1", JSON.stringify(activeTrade));
+        await renderActiveTrade();
+        document.getElementById("activeTrade").scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (e) { showError(e.message || "Giriş sabitlenemedi"); }
+    };
+    window.closeTrade = async function() {
+      if (!activeTrade) return;
+      try {
+        const data = await fetchSymbol(activeTrade.symbol);
+        const exitPrice = Number(data.lastPrice);
+        const currentValue = activeTrade.qty * exitPrice;
+        const pnl = currentValue - activeTrade.amount;
+        alert(`İşlem kapandı\nCoin: ${activeTrade.symbol}\nGiriş: ${formatNumber(activeTrade.entryPrice,8)}\nÇıkış: ${formatNumber(exitPrice,8)}\nKâr/Zarar: ${formatNumber(pnl,2)} TL (${formatPct((exitPrice/activeTrade.entryPrice-1)*100)})`);
+        activeTrade = null;
+        localStorage.removeItem("activeTradeV1");
+        renderActiveTrade();
+      } catch (e) { showError(e.message || "Çıkış hesaplanamadı"); }
+    };
+    window.clearTrade = function() {
+      activeTrade = null;
+      localStorage.removeItem("activeTradeV1");
+      renderActiveTrade();
+    };
+    async function renderActiveTrade() {
+      if (!activeTrade) {
+        activeTradeDiv.innerHTML = `<div class="box watch">Aktif işlem yok. Bir coinde “Limitten Girdim” butonuna basınca önerilen limit alış fiyatı burada sabitlenir.</div>`;
+        return;
+      }
+      try {
+        const data = await fetchSymbol(activeTrade.symbol);
+        const currentPrice = Number(data.lastPrice);
+        const currentValue = activeTrade.qty * currentPrice;
+        const pnl = currentValue - activeTrade.amount;
+        const pnlPct = (currentPrice / activeTrade.entryPrice - 1) * 100;
+        let status = "BEKLE";
+        let statusClass = "neutral";
+        let note = "Pozisyon açık. Kâr 1 / Kâr 2 / Stop seviyelerini izle.";
+        if (currentPrice >= activeTrade.take2) { status = "KÂR 2 GELDİ - ÇIKIŞ DÜŞÜN"; statusClass = "up"; note = "İkinci hedef geldi. Açgözlülük yapmadan çıkış değerlendir."; }
+        else if (currentPrice >= activeTrade.take1) { status = "KÂR 1 GELDİ - PARÇA SAT"; statusClass = "up"; note = "İlk hedef geldi. Yarısını satıp kalanı takip etmek mantıklı olabilir."; }
+        else if (currentPrice <= activeTrade.stopPrice) { status = "STOP GELDİ - ZARAR KES"; statusClass = "down"; note = "Stop seviyesi çalıştı. Plana sadık kalmak önemli."; }
+        activeTradeDiv.innerHTML = `
+          <div class="card trade-panel">
+            <div class="head">
+              <div><div class="symbol">${activeTrade.symbol} Aktif İşlem</div><div class="price">${formatNumber(currentPrice, 8)} ₺</div></div>
+              <div class="badge ${statusClass}">${status}</div>
+            </div>
+            <div class="mini">
+              <div class="cell"><span>Sabit limit giriş</span><strong>${formatNumber(activeTrade.entryPrice, 8)}</strong></div>
+              <div class="cell"><span>Şu anki fiyat</span><strong>${formatNumber(currentPrice, 8)}</strong></div>
+              <div class="cell"><span>Giriş tutarı</span><strong>${formatNumber(activeTrade.amount, 2)} TL</strong></div>
+              <div class="cell"><span>Adet</span><strong>${formatNumber(activeTrade.qty, 4)}</strong></div>
+              <div class="cell wide"><span>Kâr / Zarar</span><strong class="big-pnl" style="color:${pnl >= 0 ? '#166534' : '#991b1b'}">${formatNumber(pnl, 2)} TL (${formatPct(pnlPct)})</strong></div>
+            </div>
+            <div class="levels">
+              <div class="level tp1"><span>Kâr 1</span><strong>${formatNumber(activeTrade.take1, 8)}</strong></div>
+              <div class="level tp2"><span>Kâr 2</span><strong>${formatNumber(activeTrade.take2, 8)}</strong></div>
+              <div class="level stop wide"><span>Stop</span><strong>${formatNumber(activeTrade.stopPrice, 8)}</strong></div>
+            </div>
+            <div class="signal"><div class="signal-title">${status}</div><p>${note}</p></div>
+            <div class="trade-actions">
+              <button class="btn-green" onclick="renderActiveTrade()">Güncelle</button>
+              <button class="btn-blue" onclick="closeTrade()">Sattım / Kapat</button>
+              <button class="btn-red" onclick="clearTrade()">İptal Et</button>
+            </div>
+          </div>`;
+      } catch (e) {
+        activeTradeDiv.innerHTML = `<div class="box watch">Aktif işlem var ama canlı fiyat alınamadı: ${e.message}</div>`;
+      }
+    }
     refreshBtn.addEventListener("click", loadAllTryPairs);
     analyzeBtn.addEventListener("click", analyzeManual);
-    riskMode.addEventListener("change", () => {
-      loadAllTryPairs();
-      if (manualSymbol.value.trim()) analyzeManual();
-    });
+    riskMode.addEventListener("change", () => { loadAllTryPairs(); if (manualSymbol.value.trim()) analyzeManual(); });
     manualSymbol.addEventListener("keydown", e => { if (e.key === "Enter") analyzeManual(); });
-
     loadAllTryPairs();
+    renderActiveTrade();
     setInterval(loadAllTryPairs, 30000);
+    setInterval(renderActiveTrade, 15000);
   </script>
 </body>
 </html>
