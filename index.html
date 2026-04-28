@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Binance TRY Sinyal Paneli</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f6f8;
+      color: #111827;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.1;
+    }
+    .sub {
+      color: #64748b;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    .box, .card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+    .box {
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+    label {
+      font-size: 14px;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 8px;
+    }
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+    }
+    input:focus { border-color: #2563eb; }
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      background: #111827;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .meta {
+      margin-top: 10px;
+      color: #64748b;
+      font-size: 12px;
+    }
+    .error {
+      margin-top: 10px;
+      background: #fffbeb;
+      color: #92400e;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 13px;
+      display: none;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .card {
+      padding: 18px;
+    }
+    .head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .symbol { font-size: 20px; font-weight: 800; }
+    .price { font-size: 28px; font-weight: 800; margin-top: 4px; }
+    .badge {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      background: #e5e7eb;
+    }
+    .up { background: #dcfce7; color: #166534; }
+    .down { background: #fee2e2; color: #991b1b; }
+    .mini {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 12px 0;
+    }
+    .cell {
+      background: #f1f5f9;
+      border-radius: 13px;
+      padding: 11px;
+      font-size: 13px;
+    }
+    .cell.wide { grid-column: span 2; }
+    .cell span, .levels span {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .cell strong, .levels strong { font-size: 15px; }
+    .signal {
+      border: 1px solid #e5e7eb;
+      border-radius: 15px;
+      padding: 13px;
+      margin: 13px 0;
+    }
+    .signal-title {
+      font-weight: 900;
+      margin-bottom: 5px;
+    }
+    .signal p {
+      margin: 0;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .levels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .level {
+      border-radius: 13px;
+      padding: 11px;
+      font-size: 13px;
+    }
+    .entry { background: #ecfdf5; }
+    .pull { background: #eff6ff; }
+    .tp1 { background: #f7fee7; }
+    .tp2 { background: #dcfce7; }
+    .stop { background: #fee2e2; grid-column: span 2; }
+    .foot {
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 18px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .wrap { padding: 14px; }
+      .top { flex-direction: column; align-items: stretch; }
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Binance TRY Sinyal Paneli</h1>
+        <div class="sub">Canlı fiyata göre giriş, kar alma ve stop seviyeleri hesaplar. Emir vermez.</div>
+      </div>
+      <button id="refreshBtn">Yenile</button>
+    </div>
+
+    <div class="box">
+      <label for="symbols">Takip edilecek pariteler</label>
+      <input id="symbols" value="SLPTRY,TRUTRY,LUNCTRY,APETRY,ACHTRY,PEPETRY,DOGETRY,SHIBTRY" />
+      <div class="meta" id="updated">Son güncelleme: - · Otomatik yenileme: 30 sn</div>
+      <div class="error" id="error"></div>
+    </div>
+
+    <div class="grid" id="cards"></div>
+
+    <div class="foot">
+      Bu panel yatırım tavsiyesi değildir. Sinyaller basit momentum/hacim kurallarıyla hesaplanır; haber, likidite, ani dump ve spread risklerini garanti edemez. 24 saatlik agresif işlemlerde stop kullanmadan işlem yapmak yüksek risklidir.
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://api.binance.com/api/v3";
+    const symbolsInput = document.getElementById("symbols");
+    const cards = document.getElementById("cards");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const updated = document.getElementById("updated");
+    const errorBox = document.getElementById("error");
+
+    function formatNumber(value, digits = 6) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return "-";
+      return num.toLocaleString("tr-TR", { maximumFractionDigits: digits });
+    }
+
+    function formatPct(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return "-";
+      return (num > 0 ? "+" : "") + num.toFixed(2) + "%";
+    }
+
+    function getSignal(t) {
+      const last = Number(t.lastPrice);
+      const high = Number(t.highPrice);
+      const low = Number(t.lowPrice);
+      const change = Number(t.priceChangePercent);
+      const volumeTry = Number(t.quoteVolume);
+      const range = high - low;
+      const position = range > 0 ? (last - low) / range : 0.5;
+
+      let action = "BEKLE";
+      let reason = "Yeterli momentum yok.";
+
+      if (change > 6 && position > 0.65 && volumeTry > 5000000) {
+        action = "GİRİŞ ADAYI";
+        reason = "24s momentum ve hacim güçlü, fiyat üst banda yakın.";
+      } else if (change > 12 && position > 0.85) {
+        action = "RİSKLİ - KOVALAMA";
+        reason = "Çok yükselmiş; geri çekilme beklemek daha güvenli.";
+      } else if (change < -5) {
+        action = "UZAK DUR";
+        reason = "Günlük momentum zayıf.";
+      }
+
+      return {
+        action,
+        reason,
+        entry: last,
+        pullbackEntry: high * 0.965,
+        take1: last * 1.08,
+        take2: last * 1.15,
+        stop: last * 0.93
+      };
+    }
+
+    function cardHtml(t) {
+      const s = getSignal(t);
+      const change = Number(t.priceChangePercent);
+      const badgeClass = change >= 0 ? "badge up" : "badge down";
+
+      return `
+        <div class="card">
+          <div class="head">
+            <div>
+              <div class="symbol">${t.symbol}</div>
+              <div class="price">${formatNumber(t.lastPrice, 8)} ₺</div>
+            </div>
+            <div class="${badgeClass}">${formatPct(t.priceChangePercent)}</div>
+          </div>
+
+          <div class="mini">
+            <div class="cell"><span>24s Düşük</span><strong>${formatNumber(t.lowPrice, 8)}</strong></div>
+            <div class="cell"><span>24s Yüksek</span><strong>${formatNumber(t.highPrice, 8)}</strong></div>
+            <div class="cell wide"><span>Hacim TRY</span><strong>${formatNumber(t.quoteVolume, 0)} ₺</strong></div>
+          </div>
+
+          <div class="signal">
+            <div class="signal-title">${s.action}</div>
+            <p>${s.reason}</p>
+          </div>
+
+          <div class="levels">
+            <div class="level entry"><span>Giriş</span><strong>${formatNumber(s.entry, 8)}</strong></div>
+            <div class="level pull"><span>Geri çekilme girişi</span><strong>${formatNumber(s.pullbackEntry, 8)}</strong></div>
+            <div class="level tp1"><span>Kâr 1</span><strong>${formatNumber(s.take1, 8)}</strong></div>
+            <div class="level tp2"><span>Kâr 2</span><strong>${formatNumber(s.take2, 8)}</strong></div>
+            <div class="level stop"><span>Stop</span><strong>${formatNumber(s.stop, 8)}</strong></div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadData() {
+      refreshBtn.disabled = true;
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+
+      const symbols = symbolsInput.value
+        .split(",")
+        .map(s => s.trim().toUpperCase())
+        .filter(Boolean);
+
+      const results = await Promise.allSettled(symbols.map(async symbol => {
+        const res = await fetch(`${API_BASE}/ticker/24hr?symbol=${symbol}`);
+        if (!res.ok) throw new Error(symbol + " bulunamadı");
+        return await res.json();
+      }));
+
+      const ok = results
+        .filter(r => r.status === "fulfilled")
+        .map(r => r.value)
+        .sort((a, b) => Number(b.priceChangePercent) - Number(a.priceChangePercent));
+
+      const failed = results
+        .filter(r => r.status === "rejected")
+        .map(r => r.reason.message);
+
+      cards.innerHTML = ok.map(cardHtml).join("");
+
+      if (failed.length) {
+        errorBox.textContent = "Bazı pariteler çekilemedi: " + failed.join(", ");
+        errorBox.style.display = "block";
+      }
+
+      updated.textContent = "Son güncelleme: " + new Date().toLocaleTimeString("tr-TR") + " · Otomatik yenileme: 30 sn";
+      refreshBtn.disabled = false;
+    }
+
+    refreshBtn.addEventListener("click", loadData);
+    symbolsInput.addEventListener("change", loadData);
+
+    loadData();
+    setInterval(loadData, 30000);
+  </script>
+</body>
+</html>
