@@ -6,134 +6,352 @@
   <title>Binance TRY Trade Radar</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f4f6f8; color: #111827; }
-    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px; }
-    .top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 18px; }
-    h1 { margin: 0; font-size: 34px; line-height: 1.1; }
-    .sub { color: #64748b; margin-top: 8px; font-size: 14px; }
-    .box, .card { background: white; border: 1px solid #e5e7eb; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.06); }
+    :root {
+      --bg: #07111f;
+      --panel: rgba(15, 29, 50, .88);
+      --panel2: rgba(10, 22, 39, .95);
+      --border: rgba(90, 130, 190, .35);
+      --text: #e7f0ff;
+      --muted: #8fa6c7;
+      --green: #36f37b;
+      --green2: #16a34a;
+      --blue: #4ea3ff;
+      --orange: #ffb020;
+      --red: #ff5c66;
+      --cyan: #22d3ee;
+    }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(46, 213, 115, .16), transparent 28%),
+        radial-gradient(circle at top right, rgba(78, 163, 255, .18), transparent 32%),
+        linear-gradient(180deg, #06101e 0%, #081426 55%, #050b15 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 18px; }
+    .top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+    h1 .accent { color: var(--green); }
+    .sub { color: #b9c9e4; margin-top: 8px; font-size: 14px; }
+    .statusbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 12px;
+      align-items: center;
+      background: rgba(13, 28, 50, .85);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    .status-item span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; }
+    .status-item strong { display: block; margin-top: 4px; font-size: 15px; }
+    .help-circle {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: grid; place-items: center;
+      border: 1px solid rgba(78,163,255,.45);
+      color: var(--blue); font-size: 22px; font-weight: 900;
+      background: rgba(78,163,255,.08);
+    }
+    .box, .card {
+      background: linear-gradient(180deg, rgba(19, 34, 58, .92), rgba(10, 22, 39, .94));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 14px 35px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);
+    }
     .box { padding: 16px; margin-bottom: 18px; }
-    .controls { display: grid; grid-template-columns: 1fr 160px 160px 160px; gap: 12px; align-items: end; }
-    label { font-size: 14px; font-weight: 800; display: block; margin-bottom: 8px; }
-    input, select { width: 100%; padding: 13px 14px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 15px; outline: none; background: white; }
-    input:focus, select:focus { border-color: #2563eb; }
-    button { border: 0; border-radius: 14px; padding: 12px 14px; background: #111827; color: white; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .control-shell {
+      display: grid;
+      grid-template-columns: 1.1fr 1.2fr .9fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .control-block {
+      border-right: 1px solid rgba(143,166,199,.22);
+      padding-right: 18px;
+    }
+    .control-block:last-child { border-right: 0; padding-right: 0; }
+    .block-title {
+      color: var(--green);
+      font-size: 14px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .mode-card {
+      border: 1px solid rgba(143,166,199,.35);
+      border-radius: 10px;
+      padding: 14px;
+      background: rgba(5, 13, 26, .45);
+      cursor: pointer;
+      min-height: 68px;
+    }
+    .mode-card.active {
+      border-color: var(--green);
+      background: linear-gradient(180deg, rgba(22,163,74,.25), rgba(22,163,74,.12));
+      box-shadow: 0 0 0 1px rgba(54,243,123,.25), 0 0 24px rgba(54,243,123,.12);
+    }
+    .mode-card strong { display: block; font-size: 14px; }
+    .mode-card small { color: #b9c9e4; font-size: 12px; display:block; margin-top: 5px; }
+    .controls { display: grid; grid-template-columns: 1fr 1.6fr; gap: 14px; align-items: end; }
+    label { font-size: 13px; font-weight: 800; display: block; margin-bottom: 8px; color: #dbeafe; }
+    input, select {
+      width: 100%; padding: 13px 14px;
+      border: 1px solid rgba(143,166,199,.45);
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      background: rgba(5, 13, 26, .66);
+      color: var(--text);
+    }
+    input::placeholder { color: #7790b4; }
+    input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(78,163,255,.16); }
+    button {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: #111827;
+      color: white;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: .2px;
+    }
     button:disabled { opacity: .6; cursor: not-allowed; }
-    .btn-blue { background: #2563eb; }
-    .btn-green { background: #16a34a; }
-    .btn-red { background: #dc2626; }
-    .btn-gray { background: #475569; }
-    .btn-orange { background: #ea580c; }
-    .meta { margin-top: 10px; color: #64748b; font-size: 12px; }
-    .error { margin-top: 10px; background: #fffbeb; color: #92400e; border-radius: 12px; padding: 10px; font-size: 13px; display: none; }
-    .section-title { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 12px; }
-    .section-title h2 { margin: 0; font-size: 22px; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .card { padding: 18px; }
+    #analyzeBtn {
+      width: 100%;
+      min-height: 62px;
+      font-size: 20px;
+      background: linear-gradient(180deg, #1fb45d, #116d39);
+      border-color: rgba(54,243,123,.45);
+      box-shadow: 0 10px 26px rgba(22,163,74,.25);
+    }
+    #refreshBtn, .btn-blue { background: linear-gradient(180deg, #1d4ed8, #12306e); border-color: rgba(78,163,255,.45); }
+    .btn-green { background: linear-gradient(180deg, #1fb45d, #116d39); border-color: rgba(54,243,123,.45); }
+    .btn-red { background: rgba(220,38,38,.14); border-color: rgba(255,92,102,.65); color: #ffd0d4; }
+    .btn-gray { background: rgba(71,85,105,.35); border-color: rgba(143,166,199,.35); }
+    .btn-orange { background: rgba(234,88,12,.16); border-color: rgba(255,176,32,.65); color: #ffd991; }
+    .howto {
+      background: linear-gradient(180deg, rgba(29,78,216,.18), rgba(15,29,50,.25));
+      border-radius: 10px;
+      padding: 12px;
+      color: #cfe0ff;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .howto strong { color: #a9ccff; display:block; margin-bottom: 6px; }
+    .meta { margin-top: 10px; color: var(--muted); font-size: 12px; }
+    .error {
+      margin-top: 12px;
+      background: rgba(255,176,32,.12);
+      color: #ffd991;
+      border: 1px solid rgba(255,176,32,.25);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 13px;
+      display: none;
+    }
+    .info-line {
+      border: 1px solid rgba(78,163,255,.4);
+      background: rgba(21, 71, 135, .22);
+      color: #cfe0ff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .section-title {
+      display: flex; justify-content: space-between; align-items: center;
+      margin: 22px 0 12px;
+      background: linear-gradient(90deg, rgba(54,243,123,.10), transparent 55%);
+      padding: 10px 14px;
+      border-radius: 12px;
+    }
+    .section-title h2 { margin: 0; font-size: 21px; text-transform: uppercase; letter-spacing: .2px; }
+    .section-title h2.green { color: var(--green); }
+    .section-title h2.orange { color: var(--orange); }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .card { padding: 18px; position: relative; overflow: hidden; }
+    .card:before {
+      content: ""; position:absolute; top:0; left:0; right:0; height:1px;
+      background: linear-gradient(90deg, transparent, rgba(78,163,255,.9), transparent);
+    }
     .head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 14px; }
-    .symbol { font-size: 20px; font-weight: 900; }
-    .price { font-size: 28px; font-weight: 900; margin-top: 4px; }
-    .badge { padding: 7px 10px; border-radius: 999px; font-size: 13px; font-weight: 900; background: #e5e7eb; display: inline-block; }
-    .up { background: #dcfce7; color: #166534; }
-    .down { background: #fee2e2; color: #991b1b; }
-    .neutral { background: #e0f2fe; color: #075985; }
-    .warn { background: #fef3c7; color: #92400e; }
-    .mini { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-    .cell { background: #f1f5f9; border-radius: 13px; padding: 11px; font-size: 13px; }
-    .cell.wide { grid-column: span 2; }
-    .cell span, .levels span { display: block; color: #64748b; font-size: 12px; margin-bottom: 4px; }
-    .cell strong, .levels strong { font-size: 15px; }
-    .signal { border: 1px solid #e5e7eb; border-radius: 15px; padding: 13px; margin: 13px 0; }
-    .signal-title { font-weight: 900; margin-bottom: 5px; }
-    .signal p { margin: 0; color: #64748b; font-size: 13px; line-height: 1.4; }
+    .symbol { font-size: 22px; font-weight: 900; }
+    .price { font-size: 30px; font-weight: 900; margin-top: 4px; color: #f8fbff; }
+    .coin-logo {
+      width: 46px; height: 46px; border-radius: 50%;
+      display:inline-grid; place-items:center;
+      background: linear-gradient(180deg, #fff, #dbeafe);
+      color:#0b1220; margin-right: 10px; font-weight:900;
+      box-shadow: 0 0 0 4px rgba(255,255,255,.08);
+    }
+    .badge { padding: 7px 10px; border-radius: 8px; font-size: 13px; font-weight: 900; background: rgba(143,166,199,.18); display: inline-block; }
+    .up { background: rgba(54,243,123,.15); color: var(--green); border: 1px solid rgba(54,243,123,.28); }
+    .down { background: rgba(255,92,102,.13); color: #ff8d94; border: 1px solid rgba(255,92,102,.28); }
+    .neutral { background: rgba(78,163,255,.14); color: #a9ccff; border: 1px solid rgba(78,163,255,.28); }
+    .warn { background: rgba(255,176,32,.14); color: #ffd991; border: 1px solid rgba(255,176,32,.28); }
+    .mini { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 16px 0; border-top: 1px solid rgba(143,166,199,.25); border-bottom: 1px solid rgba(143,166,199,.25); }
+    .cell { background: transparent; border-right: 1px solid rgba(143,166,199,.2); border-bottom: 1px solid rgba(143,166,199,.14); padding: 13px; font-size: 13px; }
+    .cell:nth-child(2n) { border-right: 0; }
+    .cell.wide { grid-column: span 2; border-right:0; }
+    .cell span, .levels span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; font-weight: 800; text-transform: uppercase; }
+    .cell strong, .levels strong { font-size: 16px; color: #f8fbff; }
+    .signal { border: 1px solid rgba(143,166,199,.25); border-radius: 12px; padding: 13px; margin: 13px 0; background: rgba(5,13,26,.30); }
+    .signal-title { font-weight: 900; margin-bottom: 5px; color: var(--green); }
+    .signal p { margin: 0; color: #b9c9e4; font-size: 13px; line-height: 1.45; }
     .levels { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .level { border-radius: 13px; padding: 11px; font-size: 13px; }
-    .entry { background: #ecfdf5; }
-    .pull { background: #eff6ff; }
-    .tp1 { background: #f7fee7; }
-    .tp2 { background: #dcfce7; }
-    .stop { background: #fee2e2; }
+    .level { border-radius: 10px; padding: 12px; font-size: 13px; border: 1px solid rgba(143,166,199,.2); }
+    .entry, .pull { background: rgba(78,163,255,.10); }
+    .tp1, .tp2 { background: rgba(54,243,123,.10); }
+    .stop { background: rgba(255,92,102,.10); }
     .wide { grid-column: span 2; }
-    .watch { background: #f8fafc; border: 1px dashed #cbd5e1; }
-    .coin-btn { width: 100%; margin-top: 12px; background: #2563eb; }
-    .selected { outline: 3px solid #2563eb; }
-    .trade-panel { border: 2px solid #111827; }
-    .pending-panel { border: 2px solid #ea580c; }
-    .trade-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
-    .big-pnl { font-size: 30px; font-weight: 900; }
-    .empty { padding: 16px; color: #64748b; }
-    .foot { color: #64748b; font-size: 12px; line-height: 1.5; margin-top: 18px; }
-    @media (max-width: 1100px) { .controls { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 950px) { .grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 640px) { .wrap { padding: 14px; } .top { flex-direction: column; align-items: stretch; } .grid { grid-template-columns: 1fr; } .controls, .trade-actions { grid-template-columns: 1fr; } h1 { font-size: 26px; } }
+    .watch { background: rgba(15,29,50,.62); border: 1px dashed rgba(143,166,199,.38); }
+    .selected { outline: 2px solid rgba(78,163,255,.65); }
+    .trade-panel { border: 1px solid rgba(54,243,123,.45); }
+    .pending-panel { border: 1px solid rgba(255,176,32,.55); }
+    .trade-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+    .big-pnl { font-size: 28px; font-weight: 900; }
+    .empty { padding: 16px; color: #b9c9e4; }
+    .split { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+    .foot {
+      color: #8fa6c7;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 20px;
+      display:flex; justify-content:space-between; gap:10px;
+      border-top: 1px solid rgba(143,166,199,.18);
+      padding-top: 12px;
+    }
+    @media (max-width: 1150px) { .control-shell { grid-template-columns: 1fr 1fr; } .control-block { border-right:0; padding-right:0; } .grid, .split { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) { .wrap { padding: 12px; } .top { grid-template-columns: 1fr; } .statusbar { grid-template-columns: 1fr; } .control-shell { grid-template-columns: 1fr; } .mode-row, .controls, .trade-actions { grid-template-columns: 1fr; } h1 { font-size: 23px; } }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="top">
       <div>
-        <h1>Binance TRY Trade Radar</h1>
-        <div class="sub">Birden fazla coin için bekleyen alış emri oluşturur. Emir gerçekleşmeden aktif işlem açmaz; gerçekleşince kâr/zarar takibine alır.</div>
+        <h1><span class="accent">Akıllı</span> Kripto Analiz & İşlem Sistemi</h1>
+        <div class="sub">Tüm TRY çiftleri taranır • Anlık analiz • Otomatik öneri • Emir takibi • Kâr/Zarar hesaplama</div>
       </div>
-      <button id="refreshBtn">Yenile</button>
+      <div class="statusbar">
+        <div class="status-item"><span>Piyasa Durumu</span><strong style="color:var(--green)">● AÇIK</strong></div>
+        <div class="status-item"><span>Son güncelleme</span><strong id="topClock">-</strong></div>
+        <div class="help-circle">?</div>
+      </div>
     </div>
 
     <div class="box">
-      <div class="controls">
-        <div>
-          <label for="manualSymbol">Benim seçtiğim coin (boş bırak → sistem önerir)</label>
-          <input id="manualSymbol" placeholder="Örn: SLPTRY, TRUTRY, LUNCTRY" />
+      <div class="control-shell">
+        <div class="control-block">
+          <div class="block-title">Sistem Modu</div>
+          <div class="mode-row">
+            <div class="mode-card active" id="autoModeCard" onclick="manualSymbol.value=''; loadAllTryPairs();">
+              <strong>⚙ OTOMATİK ÖNERİ MODU</strong>
+              <small>Sistem en iyi coinleri seçer</small>
+            </div>
+            <div class="mode-card" id="manualModeCard" onclick="manualSymbol.focus();">
+              <strong>♟ MANUEL MOD</strong>
+              <small>Kendin coin yaz</small>
+            </div>
+          </div>
         </div>
-        <div>
-          <label for="amountTl">Tutar TL</label>
-          <input id="amountTl" type="number" value="1000" min="1" />
+
+        <div class="control-block">
+          <div class="block-title">Tutar ve Risk Ayarı</div>
+          <div class="controls">
+            <div>
+              <label for="amountTl">Toplam Tutar (TL)</label>
+              <input id="amountTl" type="number" value="1000" min="1" />
+            </div>
+            <div>
+              <label for="riskMode">Risk Modu</label>
+              <select id="riskMode">
+                <option value="normal">Normal</option>
+                <option value="aggressive" selected>Agresif 24s</option>
+                <option value="crazy">Çok agresif (Yüksek Getiri)</option>
+              </select>
+              <div class="meta" style="color:var(--green);font-weight:900">Coin boşsa sistem otomatik önerir</div>
+            </div>
+          </div>
         </div>
-        <div>
-          <label for="riskMode">Risk modu</label>
-          <select id="riskMode">
-            <option value="normal">Normal</option>
-            <option value="aggressive" selected>Agresif 24s</option>
-            <option value="crazy">Çok agresif</option>
-          </select>
+
+        <div class="control-block">
+          <div class="block-title">Manuel Coin</div>
+          <label for="manualSymbol">Coin yazmak istersen</label>
+          <input id="manualSymbol" placeholder="Örn: SLPTRY, TRUTRY" />
+          <div class="meta" id="updated">Son güncelleme: - · Otomatik yenileme: 30 sn</div>
+          <div class="error" id="error"></div>
         </div>
-        <button id="analyzeBtn">Analiz Et</button>
+
+        <div class="control-block">
+          <div class="howto">
+            <strong>ℹ NASIL KULLANILIR?</strong>
+            1. Tutar ve risk modunu seç<br>
+            2. Coin boşsa sistem önerir<br>
+            3. Alış emri yaz ve bekle<br>
+            4. Emir gerçekleşince onayla<br>
+            5. Hedef/stop sistemde takip edilir
+          </div>
+          <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px">
+            <button id="analyzeBtn">🔍 ANALİZ ET</button>
+            <button id="refreshBtn">↻ Yenile</button>
+          </div>
+        </div>
       </div>
-      <div class="meta" id="updated">Son güncelleme: - · Otomatik yenileme: 30 sn</div>
-      <div class="error" id="error"></div>
     </div>
 
+    <div class="info-line">ⓘ Birden fazla coin için bekleyen alış emri oluşturur. Emir gerçekleşmeden aktif işlem açmaz; gerçekleşince kâr/zarar takibine alır.</div>
+
     <div class="section-title">
-      <h2>Bekleyen Alış Emirleri</h2>
+      <h2 class="orange">⏳ Bekleyen Alış Emirleri</h2>
       <span class="badge warn">Emir gerçekleşene kadar pozisyon sayılmaz</span>
     </div>
     <div class="grid" id="pendingOrders"></div>
 
     <div class="section-title">
-      <h2>Aktif İşlemler</h2>
+      <h2 class="green">♻ Aktif İşlemler</h2>
       <span class="badge neutral">Gerçekleşen alışlar</span>
     </div>
     <div class="grid" id="activeTrades"></div>
 
     <div class="section-title">
-      <h2>Benim Öneri Adaylarım</h2>
+      <h2 class="green">★ Otomatik Öneriler</h2>
       <span class="badge neutral">Canlı tarama</span>
     </div>
     <div class="grid" id="recommended"></div>
 
     <div class="section-title">
-      <h2>Otomatik Portföy / Seçtiğin Coin Analizi</h2>
+      <h2 class="green">◆ Otomatik Portföy / Seçtiğin Coin Analizi</h2>
       <span class="badge neutral" id="selectedName">Otomatik portföy hazır değil</span>
     </div>
     <div class="grid" id="selectedCoin"></div>
 
     <div class="section-title">
-      <h2>İzleme Listesi</h2>
+      <h2>👁 İzleme Listesi</h2>
       <span class="badge neutral">Top 12 TRY momentum</span>
     </div>
     <div class="grid" id="watchlist"></div>
 
     <div class="foot">
-      Bu araç yatırım tavsiyesi değildir; otomatik emir göndermez. Binance uygulamasında limit alış emrini sen yazarsın. Bu sayfa sadece emirlerini ve gerçekleşen işlemlerini takip eder. Veriler Binance public API üzerinden okunur.
+      <span>ⓘ Veriler anlık olarak güncellenir. Yatırım tavsiyesi değildir. Kendi riskinize göre işlem yapınız.</span>
+      <span>Versiyon 1.0.0</span>
     </div>
   </div>
 
@@ -221,9 +439,10 @@
       const s = getSignal(t);
       const change = Number(t.priceChangePercent);
       const badgeClass = change >= 0 ? "badge up" : "badge down";
+      const base = t.symbol.replace('TRY','');
       return `
         <div class="card ${selected ? "selected" : ""}">
-          <div class="head"><div><div class="symbol">${t.symbol}</div><div class="price">${formatNumber(t.lastPrice, 8)} ₺</div></div><div class="${badgeClass}">${formatPct(t.priceChangePercent)}</div></div>
+          <div class="head"><div><div class="symbol"><span class="coin-logo">${base.slice(0,2)}</span>${base}/TRY</div><div class="price">${formatNumber(t.lastPrice, 8)} <small style="font-size:13px;color:var(--muted)">TRY</small></div></div><div class="${badgeClass}">${formatPct(t.priceChangePercent)}</div></div>
           <div class="mini">
             <div class="cell"><span>Limit alış emri yaz</span><strong>${formatNumber(s.buyLimit, 8)}</strong></div>
             <div class="cell"><span>Anlık fiyat</span><strong>${formatNumber(s.entry, 8)}</strong></div>
@@ -430,7 +649,8 @@
 
     async function loadAllTryPairs() {
       const autoMode = !manualSymbol.value.trim();
-      refreshBtn.disabled = true; showError("");
+      refreshBtn.disabled = true; // otomatik modda hata temizleme gereksiz olabilir
+      showError("");
       try {
         const res = await fetch(`${API_BASE}/ticker/24hr`);
         if (!res.ok) throw new Error("Binance verisi alınamadı");
@@ -444,6 +664,8 @@
         recommended.innerHTML = rec.length ? rec.map(x => cardHtml(x)).join("") : `<div class="card watch empty">Şu an güçlü öneri adayı yok. Beklemek daha güvenli.</div>`;
         watchlist.innerHTML = top.map(x => cardHtml(x)).join("");
         updated.textContent = "Son güncelleme: " + new Date().toLocaleTimeString("tr-TR") + " · Otomatik yenileme: 30 sn";
+        const topClock = document.getElementById("topClock");
+        if (topClock) topClock.textContent = new Date().toLocaleTimeString("tr-TR");
         await renderOrdersAndTrades();
       } catch (e) { showError(e.message || "Veri çekilemedi. Tarayıcı CORS hatası verirse küçük bir proxy/backend gerekir."); }
       finally { refreshBtn.disabled = false; }
@@ -493,7 +715,10 @@
 
     async function analyzeManual() {
       const symbol = manualSymbol.value.trim().toUpperCase();
-      if (!symbol) return showError("Analiz için bir parite yaz: örn SLPTRY");
+      if (!symbol) {
+        // otomatik mod: hata verme, sistem zaten öneri gösteriyor
+        return;
+      }
       showError("");
       try {
         const data = await fetchSymbol(symbol);
