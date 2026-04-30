@@ -81,7 +81,7 @@
     <div class="box">
       <div class="controls">
         <div>
-          <label for="manualSymbol">Benim seçtiğim coin</label>
+          <label for="manualSymbol">Benim seçtiğim coin (boş bırak → sistem önerir)</label>
           <input id="manualSymbol" placeholder="Örn: SLPTRY, TRUTRY, LUNCTRY" />
         </div>
         <div>
@@ -121,8 +121,8 @@
     <div class="grid" id="recommended"></div>
 
     <div class="section-title">
-      <h2>Senin Seçtiğin Coin Analizi</h2>
-      <span class="badge neutral" id="selectedName">Henüz seçilmedi</span>
+      <h2>Otomatik Portföy / Seçtiğin Coin Analizi</h2>
+      <span class="badge neutral" id="selectedName">Otomatik portföy hazır değil</span>
     </div>
     <div class="grid" id="selectedCoin"></div>
 
@@ -243,6 +243,25 @@
           </div>
         </div>`;
     }
+
+    window.placePendingOrderWithAmount = async function(symbol, limitPrice, customAmount) {
+      const amount = Number(customAmount || amountTl.value || 0);
+      if (!amount || amount <= 0) return showError("Tutar TL alanına geçerli bir rakam yaz.");
+      const p = paramsByRisk();
+      pendingOrders.push({
+        id: uid(), symbol, amount,
+        limitPrice: Number(limitPrice),
+        qty: amount / Number(limitPrice),
+        stopPrice: Number(limitPrice) * p.stop,
+        take1: Number(limitPrice) * p.tp1,
+        take2: Number(limitPrice) * p.tp2,
+        riskMode: riskMode.value,
+        createdAt: new Date().toISOString()
+      });
+      saveAll();
+      await renderOrdersAndTrades();
+      pendingOrdersDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
 
     window.placePendingOrder = async function(symbol, limitPrice) {
       const amount = Number(amountTl.value || 0);
@@ -410,6 +429,7 @@
     }
 
     async function loadAllTryPairs() {
+      const autoMode = !manualSymbol.value.trim();
       refreshBtn.disabled = true; showError("");
       try {
         const res = await fetch(`${API_BASE}/ticker/24hr`);
@@ -417,6 +437,9 @@
         const data = await res.json();
         allTryRows = data.filter(x => x.symbol.endsWith("TRY") && Number(x.quoteVolume) > 1000000).sort((a,b)=>scoreCoin(b)-scoreCoin(a));
         const rec = allTryRows.filter(x => ["GİRİŞ ADAYI", "İZLE"].includes(getSignal(x).action)).slice(0, 6);
+        if (autoMode && rec.length) {
+          renderAutoPortfolio(rec);
+        }
         const top = allTryRows.slice(0, 12);
         recommended.innerHTML = rec.length ? rec.map(x => cardHtml(x)).join("") : `<div class="card watch empty">Şu an güçlü öneri adayı yok. Beklemek daha güvenli.</div>`;
         watchlist.innerHTML = top.map(x => cardHtml(x)).join("");
@@ -424,6 +447,48 @@
         await renderOrdersAndTrades();
       } catch (e) { showError(e.message || "Veri çekilemedi. Tarayıcı CORS hatası verirse küçük bir proxy/backend gerekir."); }
       finally { refreshBtn.disabled = false; }
+    }
+
+    function portfolioCountByRisk() {
+      if (riskMode.value === "crazy") return 2;
+      if (riskMode.value === "aggressive") return 3;
+      return 3;
+    }
+
+    function renderAutoPortfolio(rec) {
+      const count = Math.min(portfolioCountByRisk(), rec.length);
+      const picks = rec.slice(0, count);
+      const total = Number(amountTl.value || 0);
+      const weights = count === 2 ? [0.6, 0.4] : (riskMode.value === "normal" ? [0.4, 0.35, 0.25] : [0.5, 0.3, 0.2]);
+
+      selectedName.textContent = "OTOMATİK PORTFÖY: " + picks.map(x => x.symbol).join(" + ");
+      selectedCoin.innerHTML = picks.map((coin, i) => {
+        const s = getSignal(coin);
+        const allocated = Math.max(1, total * weights[i]);
+        const change = Number(coin.priceChangePercent);
+        const badgeClass = change >= 0 ? "badge up" : "badge down";
+        return `
+          <div class="card selected">
+            <div class="head"><div><div class="symbol">${coin.symbol}</div><div class="price">${formatNumber(coin.lastPrice, 8)} ₺</div></div><div class="${badgeClass}">${formatPct(coin.priceChangePercent)}</div></div>
+            <div class="mini">
+              <div class="cell"><span>Portföy payı</span><strong>${Math.round(weights[i] * 100)}% / ${formatNumber(allocated, 2)} TL</strong></div>
+              <div class="cell"><span>Limit alış emri yaz</span><strong>${formatNumber(s.buyLimit, 8)}</strong></div>
+              <div class="cell"><span>Anlık fiyat</span><strong>${formatNumber(s.entry, 8)}</strong></div>
+              <div class="cell"><span>Skor</span><strong>${s.score}</strong></div>
+            </div>
+            <div class="signal"><div class="signal-title">${s.action}</div><p>${s.reason}</p></div>
+            <div class="levels">
+              <div class="level tp1"><span>Kâr 1</span><strong>${formatNumber(s.take1, 8)}</strong></div>
+              <div class="level tp2"><span>Kâr 2</span><strong>${formatNumber(s.take2, 8)}</strong></div>
+              <div class="level stop wide"><span>Stop</span><strong>${formatNumber(s.stop, 8)}</strong></div>
+            </div>
+            <div class="trade-actions">
+              <button class="btn-orange" onclick="placePendingOrderWithAmount('${coin.symbol}', ${s.buyLimit}, ${allocated})">Alış Emri Yazdım</button>
+              <button class="btn-blue" onclick="selectCoin('${coin.symbol}')">Tek Analiz</button>
+              <button class="btn-gray" onclick="manualSymbol.value='${coin.symbol}'; analyzeManual();">Seç</button>
+            </div>
+          </div>`;
+      }).join("");
     }
 
     async function analyzeManual() {
@@ -446,6 +511,7 @@
     refreshBtn.addEventListener("click", loadAllTryPairs);
     analyzeBtn.addEventListener("click", analyzeManual);
     riskMode.addEventListener("change", () => { loadAllTryPairs(); if (manualSymbol.value.trim()) analyzeManual(); });
+    amountTl.addEventListener("change", () => { loadAllTryPairs(); if (manualSymbol.value.trim()) analyzeManual(); });
     manualSymbol.addEventListener("keydown", e => { if (e.key === "Enter") analyzeManual(); });
 
     loadAllTryPairs();
